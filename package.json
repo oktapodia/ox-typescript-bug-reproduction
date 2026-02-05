@@ -1,0 +1,14 @@
+{
+  "name": "ox-typescript-bug-reproduction",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc --noEmit"
+  },
+  "dependencies": {
+    "viem": "2.45.1"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.3"
+  }
+}

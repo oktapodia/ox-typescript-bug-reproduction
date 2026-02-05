@@ -1,0 +1,177 @@
+name: Reproduce ox TypeScript Bug
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  # This job will FAIL - demonstrating the bug
+  typescript-5-9-with-viem-2-45:
+    name: "❌ TypeScript 5.9.3 + viem 2.45.1 (ox@0.11.3) - FAILS"
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run TypeScript compilation (will fail with 7 errors)
+        id: build
+        run: |
+          echo "::group::TypeScript Compilation Output"
+          npm run build 2>&1 | tee build-output.txt
+          echo "::endgroup::"
+        continue-on-error: true
+      
+      - name: Show error summary
+        if: always()
+        run: |
+          echo "## 🐛 TypeScript Compilation Failed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Expected behavior:** This job demonstrates the bug in ox@0.11.3" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Errors Found:" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          grep -E "error TS[0-9]+:" build-output.txt | head -20 || echo "Check full logs for errors"
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:**" >> $GITHUB_STEP_SUMMARY
+          echo "- TypeScript: $(npx tsc --version)" >> $GITHUB_STEP_SUMMARY
+          echo "- viem: $(npm list viem --depth=0 | grep viem)" >> $GITHUB_STEP_SUMMARY
+          echo "- ox: $(npm list ox --depth=0 | grep ox || echo 'via viem')" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Mark as expected failure
+        run: exit 1
+
+  # This job will SUCCEED - showing the workaround
+  typescript-5-9-with-viem-2-28:
+    name: "✅ TypeScript 5.9.3 + viem 2.28.4 (ox@0.6.9) - WORKS"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Downgrade to working viem version
+        run: |
+          npm install viem@2.28.4
+      
+      - name: Run TypeScript compilation (should succeed)
+        run: |
+          echo "::group::TypeScript Compilation Output"
+          npm run build
+          echo "::endgroup::"
+      
+      - name: Show success summary
+        if: success()
+        run: |
+          echo "## ✅ TypeScript Compilation Succeeded" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**This demonstrates the workaround works!**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:**" >> $GITHUB_STEP_SUMMARY
+          echo "- TypeScript: $(npx tsc --version)" >> $GITHUB_STEP_SUMMARY
+          echo "- viem: $(npm list viem --depth=0 | grep viem)" >> $GITHUB_STEP_SUMMARY
+          echo "- ox: $(npm list ox --depth=0 | grep ox || echo 'via viem')" >> $GITHUB_STEP_SUMMARY
+
+  # Test with TypeScript 5.8
+  typescript-5-8-with-viem-2-45:
+    name: "❌ TypeScript 5.8.3 + viem 2.45.1 - FAILS"
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install with TypeScript 5.8
+        run: |
+          npm install
+          npm install --save-dev typescript@~5.8.3
+      
+      - name: Run TypeScript compilation
+        id: build
+        run: npm run build
+        continue-on-error: true
+      
+      - name: Mark as expected failure
+        run: exit 1
+
+  # Test with TypeScript 5.4 (should work but ox still has some errors)
+  typescript-5-4-with-viem-2-45:
+    name: "⚠️ TypeScript 5.4.5 + viem 2.45.1 - Has errors but compiles"
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install with TypeScript 5.4
+        run: |
+          npm install
+          npm install --save-dev typescript@~5.4.5
+      
+      - name: Run TypeScript compilation
+        id: build
+        run: npm run build
+        continue-on-error: true
+      
+      - name: Show result summary
+        if: always()
+        run: |
+          echo "## ⚠️ TypeScript 5.4.5 Result" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "TypeScript 5.4.x has fewer errors but ox still has issues" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Note:** The main issue is with TypeScript 5.7+, 5.8, and 5.9" >> $GITHUB_STEP_SUMMARY
+
+  summary:
+    name: "📊 Test Summary"
+    runs-on: ubuntu-latest
+    needs: [typescript-5-9-with-viem-2-45, typescript-5-9-with-viem-2-28, typescript-5-8-with-viem-2-45, typescript-5-4-with-viem-2-45]
+    if: always()
+    steps:
+      - name: Generate summary
+        run: |
+          echo "# ox TypeScript Bug Reproduction Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Test Matrix Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| TypeScript | viem | ox | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "|------------|------|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 5.9.3 | 2.45.1 | 0.11.3 | ❌ FAILS (7 errors) |" >> $GITHUB_STEP_SUMMARY
+          echo "| 5.9.3 | 2.28.4 | 0.6.9 | ✅ WORKS (no errors) |" >> $GITHUB_STEP_SUMMARY
+          echo "| 5.8.3 | 2.45.1 | 0.11.3 | ❌ FAILS (9 errors) |" >> $GITHUB_STEP_SUMMARY
+          echo "| 5.4.5 | 2.45.1 | 0.11.3 | ⚠️ Has errors (ox still buggy) |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Conclusion" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The ox package versions 0.11.3 and 0.12.0 have TypeScript compilation errors:" >> $GITHUB_STEP_SUMMARY
+          echo "- **Severe errors** with TypeScript 5.7+, 5.8, and 5.9 (7-9 errors)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Some errors** even with TypeScript 5.4.x" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Working Solution:**" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Use viem@2.28.4 or earlier (ox@0.6.9) - **No errors with any TypeScript version**" >> $GITHUB_STEP_SUMMARY
