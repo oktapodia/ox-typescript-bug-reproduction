@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "tsc --noEmit"
+    "build": "tsc --noEmit",
+    "build:strict": "tsc -p tsconfig.strict.json --noEmit"
   },
   "dependencies": {
     "viem": "2.45.1"

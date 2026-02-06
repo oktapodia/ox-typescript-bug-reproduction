@@ -27,12 +27,13 @@ Demonstrate to the ox maintainers that ox@0.11.3 and ox@0.12.0 have TypeScript c
 
 ## 📊 Test Matrix
 
-| TypeScript | viem    | ox     | Result |
-|------------|---------|--------|--------|
-| 5.9.3      | 2.45.1  | 0.11.3 | ❌ 7 errors |
-| 5.8.3      | 2.45.1  | 0.11.3 | ❌ 7 errors |
-| 5.9.3      | 2.28.4  | 0.6.9  | ✅ Works |
-| 5.4.5      | 2.45.1  | 0.11.3 | ✅ Works |
+| Config | viem    | ox     | Result |
+|--------|---------|--------|--------|
+| TS 5.9.3 (default) | 2.45.1  | 0.11.3 | ❌ 7 errors |
+| **TS 5.9.3 + strict mode** | 2.45.1  | 0.11.3 | ❌ Same 7 errors ([viem recommends strict](https://viem.sh/docs/typescript)) |
+| TS 5.9.3 | 2.28.4  | 0.6.9  | ✅ Works |
+| TS 5.8.3 | 2.45.1  | 0.11.3 | ❌ 9 errors |
+| TS 5.4.5 | 2.45.1  | 0.11.3 | ⚠️ Has errors |
 
 ## 🚀 Quick Start
 
@@ -40,6 +41,11 @@ Demonstrate to the ox maintainers that ox@0.11.3 and ox@0.12.0 have TypeScript c
 ```bash
 npm install
 npm run build  # Fails with 7 TypeScript errors
+```
+
+### See with Strict Mode (viem-recommended)
+```bash
+npm run build:strict  # Same 7 errors with strict: true (tsconfig.strict.json)
 ```
 
 ### See the Workaround
@@ -57,12 +63,13 @@ Push to GitHub and check the Actions tab - the workflow runs automatically.
 .
 ├── .github/
 │   └── workflows/
-│       └── reproduce-bug.yml    # Automated CI workflow
+│       └── reproduce-bug.yml    # Automated CI workflow (includes strict-mode job)
 ├── src/
 │   └── index.ts                 # Minimal test code
 ├── .gitignore                   # Git ignore rules
-├── package.json                 # Dependencies
-├── tsconfig.json                # TypeScript config
+├── package.json                 # Dependencies + build + build:strict scripts
+├── tsconfig.json                # TypeScript config (strict: false)
+├── tsconfig.strict.json         # Extends base with strict: true (viem-recommended)
 ├── README.md                    # Detailed error analysis
 ├── QUICKSTART.md                # Fast-track guide
 ├── SHARE_WITH_OX_TEAM.md        # Issue reporting guide

@@ -16,14 +16,27 @@ npm install
 npm run build
 ```
 
+### Strict Mode (viem-recommended config)
+
+[viem's TypeScript docs](https://viem.sh/docs/typescript) state: *"To ensure everything works correctly, make sure that your tsconfig.json has strict mode set to true"*.
+
+With strict mode enabled, the **same 7 ox errors** occur:
+
+```bash
+npm run build:strict   # uses tsconfig.strict.json with "strict": true
+```
+
+This shows the issue is not related to strict mode—it's the ox package itself.
+
 ### GitHub Actions
 
 This repository includes a GitHub Actions workflow that automatically demonstrates the issue across multiple TypeScript and viem versions:
 
 - ❌ **TypeScript 5.9.3 + viem 2.45.1** (ox@0.11.3) - FAILS with 7 errors
+- ❌ **Strict mode + viem 2.45.1** (ox@0.11.3) - FAILS with same 7 errors ([viem recommends strict](https://viem.sh/docs/typescript))
 - ✅ **TypeScript 5.9.3 + viem 2.28.4** (ox@0.6.9) - WORKS
 - ❌ **TypeScript 5.8.3 + viem 2.45.1** - FAILS
-- ✅ **TypeScript 5.4.5 + viem 2.45.1** - WORKS
+- ⚠️ **TypeScript 5.4.5 + viem 2.45.1** - Has errors (ox still buggy)
 
 The workflow runs automatically on push and can be triggered manually. Check the "Actions" tab after pushing to GitHub to see the results.
 
